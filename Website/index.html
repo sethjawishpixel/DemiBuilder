@@ -25,7 +25,14 @@ iframe{width:100%;border:none;border-radius:15px}
 .setting{background:rgba(255,255,255,.05);border-radius:14px;padding:14px}
 .setting label{display:block;font-weight:600;margin-bottom:6px}
 .setting input[type=number]{width:100%;padding:8px;border-radius:8px;border:1px solid #7c3aed;background:#1a0b3a;color:#fff;font-size:1rem}
+.setting select{width:100%;padding:8px;border-radius:8px;border:1px solid #7c3aed;background:#1a0b3a;color:#fff;font-size:1rem}
 .setting small{display:block;margin-top:6px;color:#c4b5fd;opacity:.85;line-height:1.4}
+.buildname{text-align:center;margin:18px 0 6px;padding:18px;border-radius:18px;background:linear-gradient(135deg,rgba(124,58,237,.3),rgba(168,85,247,.08));border:1px solid rgba(216,180,254,.25)}
+.bn-label{font-size:.75rem;letter-spacing:3px;text-transform:uppercase;color:#c4b5fd}
+.bn-name{font-size:clamp(22px,4vw,32px);font-weight:800;color:#f3e8ff;text-shadow:0 0 12px #A020F0;margin:4px 0}
+.bn-sub{color:#e9d5ff;opacity:.85}
+.caps{display:flex;justify-content:space-between;font-size:.78rem;color:#c4b5fd;margin-top:6px}
+.caps b{color:#e9d5ff}
 .summary{display:flex;gap:12px;flex-wrap:wrap;margin:15px 0}
 .pill{padding:10px 18px;border-radius:999px;background:rgba(168,85,247,.2);border:1px solid rgba(255,255,255,.1);font-weight:600}
 .pill.bad{background:rgba(239,68,68,.25)}
@@ -108,15 +115,36 @@ body.show-about .tab-builder{display:none}
 
 <div class="settings">
 <div class="setting">
+<label for="position">Position</label>
+<select id="position" onchange="setPosition(this.value)"></select>
+<small>Sets the height range you can pick from.</small>
+</div>
+<div class="setting">
+<label for="height">Height: <span id="heightVal"></span></label>
+<input type="range" id="height" oninput="setPhys()">
+<small id="heightRange"></small>
+</div>
+<div class="setting">
+<label for="weight">Weight: <span id="weightVal"></span></label>
+<input type="range" id="weight" oninput="setPhys()">
+<small id="weightRange"></small>
+</div>
+<div class="setting">
+<label for="wingspan">Wingspan: <span id="wingVal"></span></label>
+<input type="range" id="wingspan" oninput="setPhys()">
+<small id="wingRange"></small>
+</div>
+<div class="setting">
 <label for="totalCB">Cap Breakers you have</label>
 <input type="number" id="totalCB" min="0" max="200" value="20" oninput="update()">
 <small>Roughly 20 are earnable at launch (Rep, Crew, Specializations, Lifetime Challenges, Season rewards), with more expected in later seasons.</small>
 </div>
-<div class="setting">
-<label for="boost">Rating gained per Cap Breaker: <span id="boostVal">+3</span></label>
-<input type="range" id="boost" min="1" max="10" value="3" oninput="update()">
-<small>Estimate only. 2K doesn't publish the exact boost per attribute; check the in-game MyPLAYER Builder or NBA 2K HQ app preview and adjust.</small>
 </div>
+
+<div class="buildname">
+<div class="bn-label">Build Name</div>
+<div class="bn-name" id="buildName"></div>
+<div class="bn-sub" id="buildSub"></div>
 </div>
 
 <div class="summary">
@@ -132,7 +160,7 @@ body.show-about .tab-builder{display:none}
 <div id="capResults" class="results"></div>
 
 <p class="note">
-<b>Rules (NBA 2K27):</b> each attribute can take at most 5 Cap Breakers, and applying one is permanent. An attribute can't go past the max potential allowed by your build's height, weight and wingspan, so check your cap in the Builder. Cap Breakers from Build Specialization must go into the category you specialized in (or Free Throw / a Physicals attribute, depending on the source). Click a chip under any attribute to set how many Cap Breakers it gets; each chip shows the rating after that breaker.
+<b>Rules (NBA 2K27):</b> each attribute can take at most 5 Cap Breakers, and applying one is permanent. Every attribute has a max potential set by your position, height, weight and wingspan, and Cap Breakers can only push it up to that attribute's Cap Breaker limit. Attributes with low caps get bigger boosts per breaker, and an attribute already near 99 gets little or nothing. DemiBuilder's caps and limits are its own estimates, not official 2K numbers, so check the in-game MyPLAYER Builder before you spend anything. Cap Breakers from Build Specialization must go into the category you specialized in (or Free Throw / a Physicals attribute, depending on the source). Click a chip under any attribute to set how many Cap Breakers it gets; each chip shows the rating after that breaker.
 </p>
 </div>
 
@@ -140,27 +168,148 @@ body.show-about .tab-builder{display:none}
 
 <script>
 const STORE_KEY = "demibuilderBuild";
-const MAX_CB = 5, MAX_RATING = 99;
+const MAX_CB = 5, MAX_RATING = 99, MIN_RATING = 25;
 
+// DemiBuilder's own estimate of 2K27 attribute caps (not official 2K data).
+// Each attribute: [default, cap at 5'9", cap at 6'6", cap at 7'3", weight effect, wingspan effect, position bonus]
+// Weight/wingspan effects are the rating swing at the heaviest/longest end of the allowed range (negative = lighter/shorter is better).
 const categories = [
-  ["Finishing", [["Close Shot",70],["Driving Layup",80],["Driving Dunk",89],["Standing Dunk",45],["Post Control",70]]],
-  ["Shooting", [["Mid Range",84],["Three Point",89],["Free Throw",75]]],
-  ["Playmaking", [["Pass Accuracy",85],["Ball Handle",92],["Speed With Ball",86]]],
-  ["Defense / Rebounding", [["Interior Defense",60],["Perimeter Defense",94],["Steal",91],["Block",78],["Offensive Rebound",55],["Defensive Rebound",80]]],
-  ["Physicals", [["Speed",85],["Agility",83],["Strength",73],["Vertical",80],["Stamina",99]]]
+  ["Finishing", [
+    ["Close Shot",70,       92,97,99,  1, 0, {C:1,PF:1}],
+    ["Driving Layup",80,    99,96,80, -3, 1, {SG:1,SF:1}],
+    ["Driving Dunk",89,     78,97,88, -2, 2, {SF:2,SG:1}],
+    ["Standing Dunk",45,    40,85,99,  4, 3, {C:2,PF:1}],
+    ["Post Control",70,     70,88,99,  4, 0, {C:2,PF:2}]]],
+  ["Shooting", [
+    ["Mid Range",84,        99,96,85, -1,-3, {SG:2,SF:1}],
+    ["Three Point",89,      99,95,82, -1,-4, {SG:2,PG:1}],
+    ["Free Throw",75,       99,99,95,  0,-1, {}]]],
+  ["Playmaking", [
+    ["Pass Accuracy",85,    99,94,85,  0, 0, {PG:3,SF:1}],
+    ["Ball Handle",92,      99,90,65, -2,-3, {PG:3,SG:1}],
+    ["Speed With Ball",86,  99,86,55, -4,-1, {PG:2,SG:1}]]],
+  ["Defense / Rebounding", [
+    ["Interior Defense",60, 55,85,99,  4, 3, {C:2,PF:2}],
+    ["Perimeter Defense",94,92,97,75, -1, 4, {SG:1,SF:2}],
+    ["Steal",91,            95,92,70, -2, 4, {PG:1,SG:1}],
+    ["Block",78,            50,85,99,  2, 5, {C:2,PF:1}],
+    ["Offensive Rebound",55,50,80,99,  4, 3, {C:2,PF:2}],
+    ["Defensive Rebound",80,60,85,99,  4, 3, {C:2,PF:2}]]],
+  ["Physicals", [
+    ["Speed",85,            96,88,65, -6, 0, {PG:1}],
+    ["Agility",83,          96,87,60, -6, 0, {PG:1,SG:1}],
+    ["Strength",73,         55,80,99, 12, 0, {PF:2,C:2}],
+    ["Vertical",80,         92,90,75, -4, 1, {SF:1,SG:1}],
+    ["Stamina",99,          99,99,99,  0, 0, {}]]]
 ];
 
+// Height ranges in inches per position.
+const POSITIONS = {
+  PG:{min:69, max:79, def:75},
+  SG:{min:72, max:80, def:77},
+  SF:{min:75, max:82, def:79},
+  PF:{min:77, max:84, def:81},
+  C: {min:79, max:87, def:84}
+};
+const SHORT = 69, MID = 78, TALL = 87;
+
+const weightRange = h => ({min:Math.round(150 + (h - SHORT) * 4.4), max:Math.round(200 + (h - SHORT) * 5)});
+const wingRange = h => ({min:h - 2, max:h + 6});
+const ftIn = n => `${Math.floor(n / 12)}'${n % 12}"`;
+
 const attributes = [];
-categories.forEach(c => c[1].forEach(a => attributes.push({name:a[0], def:a[1], cat:c[0]})));
+categories.forEach(c => c[1].forEach(a => attributes.push({
+  name:a[0], def:a[1], short:a[2], mid:a[3], tall:a[4], wt:a[5], ws:a[6], pos:a[7], cat:c[0]
+})));
 
 const base = attributes.map(a => a.def);
 const cb = attributes.map(() => 0);
+const phys = {pos:"PG", h:75, w:198, ws:78};
+let caps = [], tiers = [];
 
 const $ = id => document.getElementById(id);
-const boost = () => parseInt($("boost").value, 10);
 const totalCB = () => Math.max(0, parseInt($("totalCB").value, 10) || 0);
 const usedCB = () => cb.reduce((s, n) => s + n, 0);
-const finalOf = i => Math.min(MAX_RATING, base[i] + cb[i] * boost());
+const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
+
+// Max potential for an attribute from height, weight, wingspan and position.
+function capOf(a){
+  const h = phys.h;
+  const byHeight = h <= MID
+    ? a.short + (a.mid - a.short) * (h - SHORT) / (MID - SHORT)
+    : a.mid + (a.tall - a.mid) * (h - MID) / (TALL - MID);
+  const wr = weightRange(h), sr = wingRange(h);
+  const wRel = (phys.w - (wr.min + wr.max) / 2) / ((wr.max - wr.min) / 2);   // -1 light .. +1 heavy
+  const sRel = (phys.ws - (sr.min + sr.max) / 2) / ((sr.max - sr.min) / 2);  // -1 short .. +1 long
+  return clamp(Math.round(byHeight + a.wt * wRel + a.ws * sRel + (a.pos[phys.pos] || 0)), MIN_RATING, MAX_RATING);
+}
+
+// Cap Breaker tiers: cumulative gain after 1..5 breakers. The lower an attribute's
+// cap, the more room it has, but the total can never pass the Cap Breaker limit.
+function tiersOf(cap){
+  const room = MAX_RATING - cap;
+  const total = Math.min(room, Math.round(3 + room * 0.5));
+  const split = [0.24, 0.22, 0.2, 0.18, 0.16];
+  let sum = 0;
+  return split.map((f, n) => n === MAX_CB - 1 ? total : Math.min(total, (sum += f) && Math.round(total * sum)));
+}
+
+const cbLimit = i => caps[i] + tiers[i][MAX_CB - 1];
+const ratingWith = (i, n) => n > 0 ? Math.min(cbLimit(i), base[i] + tiers[i][n - 1]) : base[i];
+const finalOf = i => ratingWith(i, cb[i]);
+
+const BUILD_NAMES = {
+  "Finishing|Shooting":"Inside-Out Scorer",          "Shooting|Finishing":"Three-Level Scorer",
+  "Finishing|Playmaking":"Slashing Playmaker",       "Playmaking|Finishing":"Playmaking Slasher",
+  "Finishing|Defense / Rebounding":"Two-Way Slasher","Defense / Rebounding|Finishing":"Paint Beast",
+  "Finishing|Physicals":"Athletic Finisher",         "Physicals|Finishing":"Rim Wrecker",
+  "Shooting|Playmaking":"Shot-Creating Playmaker",   "Playmaking|Shooting":"Playmaking Shot Creator",
+  "Shooting|Defense / Rebounding":"3-and-D Wing",    "Defense / Rebounding|Shooting":"Two-Way Sharpshooter",
+  "Shooting|Physicals":"Athletic Marksman",          "Physicals|Shooting":"Stretch Athlete",
+  "Playmaking|Defense / Rebounding":"Two-Way Floor General", "Defense / Rebounding|Playmaking":"Lockdown Playmaker",
+  "Playmaking|Physicals":"Speed Playmaker",          "Physicals|Playmaking":"Athletic Point Forward",
+  "Defense / Rebounding|Physicals":"Glass-Cleaning Lockdown", "Physicals|Defense / Rebounding":"Interior Enforcer"
+};
+
+function buildName(){
+  const avgs = categories.map(c => {
+    const idx = attributes.map((a, i) => i).filter(i => attributes[i].cat === c[0] && attributes[i].name !== "Stamina");
+    return {cat:c[0], avg:idx.reduce((s, i) => s + finalOf(i), 0) / idx.length};
+  }).sort((x, y) => y.avg - x.avg);
+  if (avgs[0].avg - avgs[2].avg < 3) return "Balanced All-Around";
+  return BUILD_NAMES[avgs[0].cat + "|" + avgs[1].cat];
+}
+
+function setupPhysControls(){
+  $("position").innerHTML = Object.keys(POSITIONS).map(p => `<option value="${p}">${p}</option>`).join("");
+}
+
+function syncPhysControls(){
+  const pr = POSITIONS[phys.pos];
+  phys.h = clamp(phys.h, pr.min, pr.max);
+  const wr = weightRange(phys.h), sr = wingRange(phys.h);
+  phys.w = clamp(phys.w, wr.min, wr.max);
+  phys.ws = clamp(phys.ws, sr.min, sr.max);
+  $("position").value = phys.pos;
+  Object.assign($("height"), {min:pr.min, max:pr.max, value:phys.h});
+  Object.assign($("weight"), {min:wr.min, max:wr.max, value:phys.w});
+  Object.assign($("wingspan"), {min:sr.min, max:sr.max, value:phys.ws});
+  $("heightVal").textContent = ftIn(phys.h);
+  $("weightVal").textContent = phys.w + " lbs";
+  $("wingVal").textContent = ftIn(phys.ws);
+  $("heightRange").textContent = `${phys.pos} range: ${ftIn(pr.min)} – ${ftIn(pr.max)}`;
+  $("weightRange").textContent = `Range at ${ftIn(phys.h)}: ${wr.min} – ${wr.max} lbs. Heavier raises strength, post and rebounding caps and lowers speed and agility caps.`;
+  $("wingRange").textContent = `Range at ${ftIn(phys.h)}: ${ftIn(sr.min)} – ${ftIn(sr.max)}. Longer raises defense, block and rebounding caps and lowers shooting and handle caps.`;
+}
+
+function setPosition(p){ phys.pos = p; phys.h = POSITIONS[p].def; update(); }
+
+function setPhys(){
+  phys.h = parseInt($("height").value, 10);
+  phys.w = parseInt($("weight").value, 10);
+  phys.ws = parseInt($("wingspan").value, 10);
+  update();
+}
 
 function render(){
   let html = "", idx = 0;
@@ -174,7 +323,8 @@ function render(){
           <label for="attr${i}">${attributes[i].name}</label>
           <div class="attr-final" id="final${i}"></div>
         </div>
-        <input type="range" min="25" max="99" value="${base[i]}" id="attr${i}" oninput="setBase(${i}, this.value)">
+        <input type="range" min="${MIN_RATING}" max="99" value="${base[i]}" id="attr${i}" oninput="setBase(${i}, this.value)">
+        <div class="caps" id="caps${i}"></div>
         <div class="cbrow" id="cb${i}"></div>
       </div>`;
     });
@@ -184,7 +334,7 @@ function render(){
   update();
 }
 
-function setBase(i, v){ base[i] = parseInt(v, 10); update(); }
+function setBase(i, v){ base[i] = clamp(parseInt(v, 10), MIN_RATING, caps[i]); update(); }
 
 function setCB(i, n){
   // clicking the current top chip removes it
@@ -196,24 +346,37 @@ function setCB(i, n){
 }
 
 function update(){
-  $("boostVal").textContent = "+" + boost();
-  const b = boost();
+  syncPhysControls();
+  caps = attributes.map(capOf);
+  tiers = caps.map(tiersOf);
+  attributes.forEach((a, i) => {
+    base[i] = clamp(base[i], MIN_RATING, caps[i]);
+    // a maxed-out attribute (cap 99) has no room for breakers
+    while (cb[i] > 0 && ratingWith(i, cb[i]) === ratingWith(i, cb[i] - 1)) cb[i]--;
+  });
   const left = totalCB() - usedCB();
 
   attributes.forEach((a, i) => {
-    $("attr" + i).value = base[i];
+    const slider = $("attr" + i);
+    slider.max = caps[i];
+    slider.value = base[i];
     const fin = finalOf(i), gain = fin - base[i];
     $("final" + i).innerHTML = fin + (gain > 0 ? `<span class="up">+${gain}</span>` : "");
+    $("caps" + i).innerHTML = `<span>Max potential <b>${caps[i]}</b></span><span>Cap Breaker limit <b>${cbLimit(i)}</b></span>`;
 
     let chips = `<span class="lbl">Cap Breakers:</span>`;
     for (let n = 1; n <= MAX_CB; n++){
-      const rating = Math.min(MAX_RATING, base[i] + n * b);
+      const rating = ratingWith(i, n);
       const on = n <= cb[i];
-      const blocked = !on && (n - cb[i]) > left;
-      chips += `<button class="chip${on ? " on" : ""}${blocked ? " maxed" : ""}" ${blocked ? "disabled" : ""} onclick="setCB(${i},${n})">CB${n}<b>→ ${rating}</b></button>`;
+      const useless = !on && rating === ratingWith(i, n - 1);
+      const blocked = useless || (!on && (n - cb[i]) > left);
+      chips += `<button class="chip${on ? " on" : ""}${blocked ? " maxed" : ""}" ${blocked ? "disabled" : ""} title="${useless ? "Already at the Cap Breaker limit" : ""}" onclick="setCB(${i},${n})">CB${n}<b>→ ${rating}</b></button>`;
     }
     $("cb" + i).innerHTML = chips;
   });
+
+  $("buildName").textContent = buildName();
+  $("buildSub").textContent = `${phys.pos} · ${ftIn(phys.h)} · ${phys.w} lbs · ${ftIn(phys.ws)} wingspan`;
 
   // summary
   const avgBase = Math.round(base.reduce((s, v) => s + v, 0) / base.length * 10) / 10;
@@ -230,20 +393,23 @@ function update(){
     if (cb[i] > 0){
       res += `<div class="card"><div class="name">${a.name}</div>
         <div class="nums">${base[i]} → <span class="green">${finalOf(i)}</span></div>
-        <div style="opacity:.8;margin-top:4px">${cb[i]}/${MAX_CB} Cap Breakers · +${finalOf(i) - base[i]}</div></div>`;
+        <div style="opacity:.8;margin-top:4px">${cb[i]}/${MAX_CB} Cap Breakers · +${finalOf(i) - base[i]} · limit ${cbLimit(i)}</div></div>`;
     }
   });
   $("capResults").innerHTML = res || `<p style="opacity:.7">No Cap Breakers placed yet. Click a chip under any attribute.</p>`;
 }
 
-function collect(){ return { v:1, b:base.slice(), c:cb.slice(), t:totalCB(), x:boost() }; }
+function collect(){ return { v:2, b:base.slice(), c:cb.slice(), t:totalCB(), p:{...phys} }; }
 
 function apply(d){
   if (!d || !Array.isArray(d.b) || !Array.isArray(d.c) || d.b.length !== attributes.length || d.c.length !== attributes.length) return false;
-  d.b.forEach((v, i) => base[i] = Math.min(99, Math.max(25, parseInt(v, 10) || attributes[i].def)));
-  d.c.forEach((v, i) => cb[i] = Math.min(MAX_CB, Math.max(0, parseInt(v, 10) || 0)));
+  d.b.forEach((v, i) => base[i] = clamp(parseInt(v, 10) || attributes[i].def, MIN_RATING, 99));
+  d.c.forEach((v, i) => cb[i] = clamp(parseInt(v, 10) || 0, 0, MAX_CB));
   if (d.t !== undefined) $("totalCB").value = Math.max(0, parseInt(d.t, 10) || 0);
-  if (d.x !== undefined) $("boost").value = Math.min(10, Math.max(1, parseInt(d.x, 10) || 3));
+  if (d.p && POSITIONS[d.p.pos]){
+    phys.pos = d.p.pos;
+    ["h", "w", "ws"].forEach(k => { const v = parseInt(d.p[k], 10); if (v) phys[k] = v; });
+  }
   return true;
 }
 
@@ -268,8 +434,8 @@ function loadBuild(manual){
 
 function resetBuild(){
   attributes.forEach((a, i) => { base[i] = a.def; cb[i] = 0; });
+  Object.assign(phys, {pos:"PG", h:75, w:198, ws:78});
   $("totalCB").value = 20;
-  $("boost").value = 3;
   try { localStorage.removeItem(STORE_KEY); } catch (e) {}
   update();
   alert("Build Reset!");
@@ -303,6 +469,7 @@ function showTab(t){
   window.scrollTo({top:0, behavior:"smooth"});
 }
 
+setupPhysControls();
 render();
 loadBuild(false);
 </script>
