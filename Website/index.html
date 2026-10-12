@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DemiBuilder</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',sans-serif;background:radial-gradient(circle at top,#5b21b6 0%,#2e1065 35%,#111 100%) fixed;color:#fff}
+header{position:relative;height:320px;overflow:hidden;background:#000}
+.banner{width:100%;height:100%;object-fit:cover;object-position:center 25%;opacity:.35;filter:brightness(.8)}
+.hero{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;width:100%;padding:0 10px}
+.hero h1{font-size:clamp(40px,10vw,80px);letter-spacing:3px;color:#f3e8ff;text-shadow:0 0 5px #A020F0,0 0 15px #A020F0,0 0 30px #A020F0,0 0 60px #A020F0,0 0 90px #A020F0}
+.hero p{margin-top:10px;font-size:1.2rem;color:#e9d5ff}
+.box{max-width:1200px;margin:25px auto;padding:25px;border-radius:20px;background:rgba(255,255,255,.04);backdrop-filter:blur(16px);border:1px solid rgba(255,255,255,.08);box-shadow:0 8px 30px rgba(0,0,0,.35)}
+@media(max-width:1250px){.box{margin:25px 12px}}
+h2{margin-bottom:15px;color:#d8b4fe}
+h3{color:#d8b4fe;margin:25px 0 12px;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:6px}
+.socials,.toolbar{display:flex;justify-content:center;align-items:center;gap:12px;flex-wrap:wrap}
+.toolbar{justify-content:flex-start;margin-bottom:20px}
+.social-button,.action-btn{display:inline-flex;align-items:center;justify-content:center;padding:12px 22px;border-radius:999px;text-decoration:none;font-weight:bold;font-size:1rem;cursor:pointer;color:#fff;border:none;background:linear-gradient(135deg,#7c3aed,#a855f7);transition:.25s}
+.social-button:hover,.action-btn:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 12px 25px rgba(168,85,247,.4)}
+iframe{width:100%;border:none;border-radius:15px}
+.settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:15px;margin-bottom:10px}
+.setting{background:rgba(255,255,255,.05);border-radius:14px;padding:14px}
+.setting label{display:block;font-weight:600;margin-bottom:6px}
+.setting input[type=number]{width:100%;padding:8px;border-radius:8px;border:1px solid #7c3aed;background:#1a0b3a;color:#fff;font-size:1rem}
+.setting small{display:block;margin-top:6px;color:#c4b5fd;opacity:.85;line-height:1.4}
+.summary{display:flex;gap:12px;flex-wrap:wrap;margin:15px 0}
+.pill{padding:10px 18px;border-radius:999px;background:rgba(168,85,247,.2);border:1px solid rgba(255,255,255,.1);font-weight:600}
+.pill.bad{background:rgba(239,68,68,.25)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:14px}
+.attribute{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);border-radius:16px;padding:14px}
+.attr-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.attr-head label{font-weight:600}
+.attr-final{font-weight:bold;color:#d8b4fe;font-size:1.1rem}
+.attr-final .up{color:#00ff88;font-size:.9rem;margin-left:4px}
+input[type=range]{width:100%;margin-top:8px;accent-color:#a855f7}
+.cbrow{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.cbrow span.lbl{font-size:.8rem;color:#c4b5fd;margin-right:2px}
+.chip{border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#e9d5ff;border-radius:10px;padding:5px 8px;font-size:.78rem;cursor:pointer;line-height:1.25;text-align:center;transition:.15s}
+.chip b{display:block;font-size:.72rem;color:#c4b5fd}
+.chip:hover{background:rgba(168,85,247,.35)}
+.chip.on{background:linear-gradient(135deg,#7c3aed,#a855f7);border-color:#d8b4fe;color:#fff}
+.chip.on b{color:#f3e8ff}
+.chip.maxed{opacity:.45;cursor:not-allowed}
+.results{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:15px;margin-top:10px}
+.card{background:linear-gradient(135deg,rgba(124,58,237,.18),rgba(255,255,255,.04));border:1px solid rgba(255,255,255,.08);padding:18px;border-radius:20px;text-align:center;transition:.25s}
+.card:hover{transform:translateY(-5px);box-shadow:0 15px 30px rgba(124,58,237,.25)}
+.card .name{font-weight:600;margin-bottom:6px}
+.card .nums{font-size:1.4rem}
+.green{color:#00ff88;font-weight:bold}
+.note{font-size:.88rem;color:#c4b5fd;line-height:1.6;margin-top:14px}
+.tabs{display:flex;justify-content:center;gap:12px;margin:25px 12px 0;flex-wrap:wrap}
+.tab-btn{padding:12px 28px;border-radius:999px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06);color:#e9d5ff;font-weight:bold;font-size:1rem;cursor:pointer;transition:.25s}
+.tab-btn:hover{background:rgba(168,85,247,.35)}
+.tab-btn.active{background:linear-gradient(135deg,#7c3aed,#a855f7);color:#fff;box-shadow:0 8px 20px rgba(168,85,247,.4)}
+.tab-about{display:none}
+body.show-about .tab-about{display:block}
+body.show-about .tab-builder{display:none}
+.footer{text-align:center;padding:40px 20px;opacity:.8;font-size:.9rem}
+</style>
+</head>
+<body>
+
+<header>
+<img src="banner.jpg" class="banner" alt="Banner" onerror="this.style.display='none';">
+<div class="hero">
+<h1>DEMIBUILDER</h1>
+<p>The Ultimate NBA Build Planner &amp; Cap Breaker Simulator</p>
+</div>
+</header>
+
+<nav class="tabs">
+<button class="tab-btn active" id="btn-builder" onclick="showTab('builder')">🏀 Builder</button>
+<button class="tab-btn" id="btn-about" onclick="showTab('about')">👤 About Me</button>
+</nav>
+
+<div class="box tab-builder">
+<h2>🏀 Welcome to DemiBuilder</h2>
+<p style="line-height:1.8;">Create NBA 2K27 builds, plan cap breakers, compare attribute upgrades, test build ideas, and see your final ratings before spending anything.</p>
+</div>
+
+<div class="box tab-about">
+<h2>🎵 Latest Music</h2>
+<iframe height="350" allow="autoplay" src="https://w.soundcloud.com/player/?url=https%3A//api.soundcloud.com/playlists/2312795940&color=%23A020F0&auto_play=false&hide_related=false&show_comments=true&show_user=true&show_reposts=false&visual=true"></iframe>
+</div>
+
+<div class="box tab-about">
+<h2>📱 Follow Me</h2>
+<div class="socials">
+<a class="social-button" href="https://soundcloud.com/lilsethrow" target="_blank" rel="noopener">🎵 SoundCloud</a>
+<a class="social-button" href="https://www.youtube.com/@lilsethrow" target="_blank" rel="noopener">📺 YouTube</a>
+<a class="social-button" href="https://www.twitch.tv/lilsethrow" target="_blank" rel="noopener">🎮 Twitch</a>
+</div>
+</div>
+
+<div class="box tab-builder">
+<h2>🔥 DemiBuilder Cap Breaker Planner</h2>
+
+<div class="toolbar">
+<button class="action-btn" onclick="saveBuild()">💾 Save Build</button>
+<button class="action-btn" onclick="loadBuild(true)">📂 Load Build</button>
+<button class="action-btn" onclick="resetBuild()">🔄 Reset Build</button>
+<button class="action-btn" onclick="shareBuild()">🔗 Share Build</button>
+<button class="action-btn" onclick="importBuild()">📥 Import Build</button>
+</div>
+
+<div class="settings">
+<div class="setting">
+<label for="totalCB">Cap Breakers you have</label>
+<input type="number" id="totalCB" min="0" max="200" value="20" oninput="update()">
+<small>Roughly 20 are earnable at launch (Rep, Crew, Specializations, Lifetime Challenges, Season rewards), with more expected in later seasons.</small>
+</div>
+<div class="setting">
+<label for="boost">Rating gained per Cap Breaker: <span id="boostVal">+3</span></label>
+<input type="range" id="boost" min="1" max="10" value="3" oninput="update()">
+<small>Estimate only. 2K doesn't publish the exact boost per attribute; check the in-game MyPLAYER Builder or NBA 2K HQ app preview and adjust.</small>
+</div>
+</div>
+
+<div class="summary">
+<div class="pill" id="sumUsed">Used: 0</div>
+<div class="pill" id="sumLeft">Remaining: 0</div>
+<div class="pill" id="sumAvg">Avg base: 0</div>
+<div class="pill" id="sumFinal">Avg final: 0</div>
+</div>
+
+<div id="attributes"></div>
+
+<h2 style="margin-top:30px;">🔥 Cap Breaker Results</h2>
+<div id="capResults" class="results"></div>
+
+<p class="note">
+<b>Rules (NBA 2K27):</b> each attribute can take at most 5 Cap Breakers, and applying one is permanent. An attribute can't go past the max potential allowed by your build's height, weight and wingspan, so check your cap in the Builder. Cap Breakers from Build Specialization must go into the category you specialized in (or Free Throw / a Physicals attribute, depending on the source). Click a chip under any attribute to set how many Cap Breakers it gets; each chip shows the rating after that breaker.
+</p>
+</div>
+
+<div class="footer">© Sethrow | DemiBuilder</div>
+
+<script>
+const STORE_KEY = "demibuilderBuild";
+const MAX_CB = 5, MAX_RATING = 99;
+
+const categories = [
+  ["Finishing", [["Close Shot",70],["Driving Layup",80],["Driving Dunk",89],["Standing Dunk",45],["Post Control",70]]],
+  ["Shooting", [["Mid Range",84],["Three Point",89],["Free Throw",75]]],
+  ["Playmaking", [["Pass Accuracy",85],["Ball Handle",92],["Speed With Ball",86]]],
+  ["Defense / Rebounding", [["Interior Defense",60],["Perimeter Defense",94],["Steal",91],["Block",78],["Offensive Rebound",55],["Defensive Rebound",80]]],
+  ["Physicals", [["Speed",85],["Agility",83],["Strength",73],["Vertical",80],["Stamina",99]]]
+];
+
+const attributes = [];
+categories.forEach(c => c[1].forEach(a => attributes.push({name:a[0], def:a[1], cat:c[0]})));
+
+const base = attributes.map(a => a.def);
+const cb = attributes.map(() => 0);
+
+const $ = id => document.getElementById(id);
+const boost = () => parseInt($("boost").value, 10);
+const totalCB = () => Math.max(0, parseInt($("totalCB").value, 10) || 0);
+const usedCB = () => cb.reduce((s, n) => s + n, 0);
+const finalOf = i => Math.min(MAX_RATING, base[i] + cb[i] * boost());
+
+function render(){
+  let html = "", idx = 0;
+  categories.forEach(c => {
+    html += `<h3>${c[0]}</h3><div class="grid">`;
+    c[1].forEach(() => {
+      const i = idx++;
+      html += `
+      <div class="attribute">
+        <div class="attr-head">
+          <label for="attr${i}">${attributes[i].name}</label>
+          <div class="attr-final" id="final${i}"></div>
+        </div>
+        <input type="range" min="25" max="99" value="${base[i]}" id="attr${i}" oninput="setBase(${i}, this.value)">
+        <div class="cbrow" id="cb${i}"></div>
+      </div>`;
+    });
+    html += `</div>`;
+  });
+  $("attributes").innerHTML = html;
+  update();
+}
+
+function setBase(i, v){ base[i] = parseInt(v, 10); update(); }
+
+function setCB(i, n){
+  // clicking the current top chip removes it
+  if (cb[i] === n) n = n - 1;
+  const others = usedCB() - cb[i];
+  if (others + n > totalCB()){ n = Math.max(0, totalCB() - others); }
+  cb[i] = n;
+  update();
+}
+
+function update(){
+  $("boostVal").textContent = "+" + boost();
+  const b = boost();
+  const left = totalCB() - usedCB();
+
+  attributes.forEach((a, i) => {
+    $("attr" + i).value = base[i];
+    const fin = finalOf(i), gain = fin - base[i];
+    $("final" + i).innerHTML = fin + (gain > 0 ? `<span class="up">+${gain}</span>` : "");
+
+    let chips = `<span class="lbl">Cap Breakers:</span>`;
+    for (let n = 1; n <= MAX_CB; n++){
+      const rating = Math.min(MAX_RATING, base[i] + n * b);
+      const on = n <= cb[i];
+      const blocked = !on && (n - cb[i]) > left;
+      chips += `<button class="chip${on ? " on" : ""}${blocked ? " maxed" : ""}" ${blocked ? "disabled" : ""} onclick="setCB(${i},${n})">CB${n}<b>→ ${rating}</b></button>`;
+    }
+    $("cb" + i).innerHTML = chips;
+  });
+
+  // summary
+  const avgBase = Math.round(base.reduce((s, v) => s + v, 0) / base.length * 10) / 10;
+  const avgFinal = Math.round(attributes.reduce((s, a, i) => s + finalOf(i), 0) / attributes.length * 10) / 10;
+  $("sumUsed").textContent = `Used: ${usedCB()} / ${totalCB()}`;
+  $("sumLeft").textContent = `Remaining: ${left}`;
+  $("sumLeft").className = "pill" + (left < 0 ? " bad" : "");
+  $("sumAvg").textContent = `Avg base: ${avgBase}`;
+  $("sumFinal").textContent = `Avg final: ${avgFinal}`;
+
+  // results
+  let res = "";
+  attributes.forEach((a, i) => {
+    if (cb[i] > 0){
+      res += `<div class="card"><div class="name">${a.name}</div>
+        <div class="nums">${base[i]} → <span class="green">${finalOf(i)}</span></div>
+        <div style="opacity:.8;margin-top:4px">${cb[i]}/${MAX_CB} Cap Breakers · +${finalOf(i) - base[i]}</div></div>`;
+    }
+  });
+  $("capResults").innerHTML = res || `<p style="opacity:.7">No Cap Breakers placed yet. Click a chip under any attribute.</p>`;
+}
+
+function collect(){ return { v:1, b:base.slice(), c:cb.slice(), t:totalCB(), x:boost() }; }
+
+function apply(d){
+  if (!d || !Array.isArray(d.b) || !Array.isArray(d.c) || d.b.length !== attributes.length || d.c.length !== attributes.length) return false;
+  d.b.forEach((v, i) => base[i] = Math.min(99, Math.max(25, parseInt(v, 10) || attributes[i].def)));
+  d.c.forEach((v, i) => cb[i] = Math.min(MAX_CB, Math.max(0, parseInt(v, 10) || 0)));
+  if (d.t !== undefined) $("totalCB").value = Math.max(0, parseInt(d.t, 10) || 0);
+  if (d.x !== undefined) $("boost").value = Math.min(10, Math.max(1, parseInt(d.x, 10) || 3));
+  return true;
+}
+
+function saveBuild(){
+  try {
+    localStorage.setItem(STORE_KEY, JSON.stringify(collect()));
+    alert("Build Saved!");
+  } catch (e) {
+    alert("Couldn't save in this browser. Use Share Build to copy a code instead.");
+  }
+}
+
+function loadBuild(manual){
+  try {
+    const s = localStorage.getItem(STORE_KEY);
+    if (!s){ if (manual) alert("No saved build found."); return; }
+    if (apply(JSON.parse(s))){ update(); if (manual) alert("Build Loaded!"); }
+  } catch (e) {
+    if (manual) alert("Couldn't load the saved build.");
+  }
+}
+
+function resetBuild(){
+  attributes.forEach((a, i) => { base[i] = a.def; cb[i] = 0; });
+  $("totalCB").value = 20;
+  $("boost").value = 3;
+  try { localStorage.removeItem(STORE_KEY); } catch (e) {}
+  update();
+  alert("Build Reset!");
+}
+
+function shareBuild(){
+  const code = btoa(JSON.stringify(collect()));
+  const fallback = () => prompt("Copy this build code:", code);
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(code)
+      .then(() => alert("Build Code Copied!\n\nSend this code to friends:\n\n" + code))
+      .catch(fallback);
+  } else fallback();
+}
+
+function importBuild(){
+  const code = prompt("Paste a build code:");
+  if (!code) return;
+  try {
+    if (apply(JSON.parse(atob(code.trim())))){ update(); alert("Build Imported!"); }
+    else alert("That build code doesn't match this version.");
+  } catch (e) {
+    alert("Invalid build code.");
+  }
+}
+
+function showTab(t){
+  document.body.classList.toggle("show-about", t === "about");
+  $("btn-builder").classList.toggle("active", t === "builder");
+  $("btn-about").classList.toggle("active", t === "about");
+  window.scrollTo({top:0, behavior:"smooth"});
+}
+
+render();
+loadBuild(false);
+</script>
+</body>
+</html>
